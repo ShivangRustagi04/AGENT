@@ -6,10 +6,8 @@ import torch
 
 # Initialize FastAPI app
 app = FastAPI()
-
-# Load GPT-NeoX model and tokenizer
-tokenizer = AutoTokenizer.from_pretrained("EleutherAI/gpt-neo-2.7B")
-model = AutoModelForCausalLM.from_pretrained("EleutherAI/gpt-neo-2.7B")
+tokenizer = AutoTokenizer.from_pretrained("EleutherAI/gpt-neo-125M")
+model = AutoModelForCausalLM.from_pretrained("EleutherAI/gpt-neo-125M")
 
 # Initialize SQLite3 database
 def init_db():
