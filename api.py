@@ -45,7 +45,12 @@ class Solution(BaseModel):
 class UserProgress(BaseModel):
     user_id: str
 
-# Generate hints using GPT-NeoX
+
+@app.get("/")
+def read_root():
+    return {"message": "Welcome to the AI Coding Assistant API!"}
+
+
 @app.post("/api/get_hints")
 async def get_hints(problem: Problem):
     prompt = f"Provide hints for solving this coding problem: {problem.description}"
@@ -54,7 +59,6 @@ async def get_hints(problem: Problem):
     hint = tokenizer.decode(outputs[0], skip_special_tokens=True)
     return {"hints": hint.split("\n")}
 
-# Evaluate a solution using GPT-NeoX
 @app.post("/api/evaluate_solution")
 async def evaluate_solution(solution: Solution):
     prompt = f"Evaluate this solution for the problem: {solution.problem_description}\nSolution:\n{solution.solution_code}"
