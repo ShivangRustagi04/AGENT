@@ -2,12 +2,13 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import sqlite3
 from transformers import AutoTokenizer, AutoModelForCausalLM
-import torch
 
 # Initialize FastAPI app
 app = FastAPI()
-tokenizer = AutoTokenizer.from_pretrained("EleutherAI/gpt-neo-125M")
-model = AutoModelForCausalLM.from_pretrained("EleutherAI/gpt-neo-125M")
+
+# Load DistilGPT-2 model and tokenizer (smaller model, ~80 MB)
+tokenizer = AutoTokenizer.from_pretrained("distilgpt2")
+model = AutoModelForCausalLM.from_pretrained("distilgpt2")
 
 # Initialize SQLite3 database
 def init_db():
@@ -45,11 +46,9 @@ class Solution(BaseModel):
 class UserProgress(BaseModel):
     user_id: str
 
-
 @app.get("/")
 def read_root():
     return {"message": "Welcome to the AI Coding Assistant API!"}
-
 
 @app.post("/api/get_hints")
 async def get_hints(problem: Problem):
