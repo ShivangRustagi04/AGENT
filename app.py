@@ -1,12 +1,55 @@
 import streamlit as st
-import requests
+import sqlite3
+import os
+import google.generativeai as genai
+from dotenv import load_dotenv
 
-# Define the base URL of the FastAPI backend
-API_BASE_URL = "https://agent-sg9h.onrender.com"  # Replace with your Render-provided URL
+# Initialize SQLite3 database
+def init_db():
+    conn = sqlite3.connect('coding_assistant.db')
+    cursor = conn.cursor()
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            user_id TEXT PRIMARY KEY,
+            name TEXT,
+            email TEXT
+        )
+    ''')
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS user_progress (
+            user_id TEXT,
+            problem_id INTEGER,
+            status TEXT,
+            FOREIGN KEY(user_id) REFERENCES users(user_id)
+        )
+    ''')
+    conn.commit()
+    conn.close()
+
+load_dotenv()
+genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
+model = genai.GenerativeModel('gemini-1.5-pro-latest')
+
+# Function to generate hints using Gemini API
+def generate_hint(problem_description):
+    prompt = f"Provide hints for solving this coding problem: {problem_description}"
+    response = model.generate_content(prompt)
+    hints = response.text.split("\n")  # Split hints into a list
+    return hints
+
+# Function to evaluate a solution using Gemini API
+def evaluate_solution(problem_description, solution_code):
+    prompt = f"Evaluate this solution for the problem: {problem_description}\nSolution:\n{solution_code}"
+    response = model.generate_content(prompt)
+    evaluation = response.text
+    return evaluation
 
 # Streamlit app
 def main():
-    st.title("AI Coding Assistant (Powered by GPT-NeoX)")
+    st.title("AI Coding Assistant (Powered by Gemini API)")
+    
+    # Initialize database
+    init_db()
     
     # Sidebar for navigation
     menu = st.sidebar.selectbox("Menu", ["Solve Problem", "View Progress"])
@@ -17,49 +60,32 @@ def main():
         problem_description = st.text_area("Problem Description", "Enter the problem here...")
         
         if st.button("Get Hints"):
-            response = requests.post(
-                f"{API_BASE_URL}/api/get_hints",
-                json={"description": problem_description}
-            )
-            if response.status_code == 200:
-                hints = response.json()["hints"]
-                st.subheader("Hints:")
-                for hint in hints:
-                    st.write(hint)
-            else:
-                st.error(f"Failed to fetch hints. Status code: {response.status_code}")
+            hints = generate_hint(problem_description)
+            st.subheader("Hints:")
+            for hint in hints:
+                st.write(hint)
         
         code = st.text_area("Write your solution here...")
         if st.button("Submit Solution"):
-            response = requests.post(
-                f"{API_BASE_URL}/api/evaluate_solution",
-                json={
-                    "problem_description": problem_description,
-                    "solution_code": code
-                }
-            )
-            if response.status_code == 200:
-                evaluation = response.json()["evaluation"]
-                st.subheader("Evaluation:")
-                st.write(evaluation)
-            else:
-                st.error(f"Failed to evaluate solution. Status code: {response.status_code}")
+            evaluation = evaluate_solution(problem_description, code)
+            st.subheader("Evaluation:")
+            st.write(evaluation)
     
     elif menu == "View Progress":
         st.header("Your Progress")
         user_id = st.text_input("User ID")
         if st.button("Fetch Progress"):
-            response = requests.post(
-                f"{API_BASE_URL}/api/user_progress",
-                json={"user_id": user_id}
-            )
-            if response.status_code == 200:
-                progress = response.json()["progress"]
+            conn = sqlite3.connect('coding_assistant.db')
+            cursor = conn.cursor()
+            cursor.execute("SELECT problem_id, status FROM user_progress WHERE user_id = ?", (user_id,))
+            progress = cursor.fetchall()
+            conn.close()
+            if progress:
                 st.subheader("Solved Problems:")
-                for item in progress:
-                    st.write(f"Problem ID: {item['problem_id']}, Status: {item['status']}")
+                for row in progress:
+                    st.write(f"Problem ID: {row[0]}, Status: {row[1]}")
             else:
-                st.error(f"Failed to fetch progress. Status code: {response.status_code}")
+                st.write("No progress found for this user.")
 
 if __name__ == "__main__":
     main()
