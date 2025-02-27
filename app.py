@@ -31,7 +31,6 @@ def main():
     
     if menu == "Solve Problem":
         st.header("Solve a Coding Problem")
-        problem_id = st.number_input("Problem ID", min_value=1, step=1)
         problem_description = st.text_area("Problem Description", "Enter the problem here...")
         
         if st.button("Get Hints"):
