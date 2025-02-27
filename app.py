@@ -49,12 +49,25 @@ def evaluate_solution(problem_description, solution_code):
 def update_progress(user_id, problem_id, status):
     conn = sqlite3.connect('coding_assistant.db')
     cursor = conn.cursor()
-    cursor.execute('''
-        INSERT OR REPLACE INTO user_progress (user_id, problem_id, status)
-        VALUES (?, ?, ?)
-    ''', (user_id, problem_id, status))
-    conn.commit()
-    conn.close()
+    try:
+        # Check if user exists
+        cursor.execute("SELECT 1 FROM users WHERE user_id = ?", (user_id,))
+        if not cursor.fetchone():
+            st.error("User ID not found. Please register first.")
+            conn.close()
+            return
+        
+        # Insert or replace progress
+        cursor.execute('''
+            INSERT OR REPLACE INTO user_progress (user_id, problem_id, status)
+            VALUES (?, ?, ?)
+        ''', (user_id, problem_id, status))
+        conn.commit()
+        st.success(f"Progress saved for user_id: {user_id}, problem_id: {problem_id}")
+    except Exception as e:
+        st.error(f"Error saving progress: {e}")
+    finally:
+        conn.close()
 
 # Function to fetch user details
 def get_user_details(user_id):
@@ -92,27 +105,32 @@ def main():
             st.subheader("Evaluation:")
             st.write(evaluation)
             
-            # Update user progress
+            # Save progress
             user_id = st.text_input("Enter your User ID to save progress")
-            if user_id:
-                update_progress(user_id, problem_id, "Completed")
-                st.success("Progress saved successfully!")
+            if user_id.strip() == "":
+                st.error("User ID cannot be empty.")
+                return
+            
+            update_progress(user_id, problem_id, "Completed")
     
     elif menu == "View Progress":
         st.header("Your Progress")
         user_id = st.text_input("User ID")
         if st.button("Fetch Progress"):
+            user_details = get_user_details(user_id)
+            if not user_details:
+                st.error("User ID not found. Please register first.")
+                return
+            
+            st.subheader(f"User Details:")
+            st.write(f"Name: {user_details[0]}")
+            st.write(f"Email: {user_details[1]}")
+            
             conn = sqlite3.connect('coding_assistant.db')
             cursor = conn.cursor()
             cursor.execute("SELECT problem_id, status FROM user_progress WHERE user_id = ?", (user_id,))
             progress = cursor.fetchall()
             conn.close()
-            
-            user_details = get_user_details(user_id)
-            if user_details:
-                st.subheader(f"User Details:")
-                st.write(f"Name: {user_details[0]}")
-                st.write(f"Email: {user_details[1]}")
             
             if progress:
                 st.subheader("Solved Problems:")
