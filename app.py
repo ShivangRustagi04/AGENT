@@ -24,7 +24,7 @@ def evaluate_solution(problem_description, solution_code):
 
 # Streamlit app
 def main():
-    st.title("AI Coding Assistant (Powered by Gemini API)")
+    st.title("AI Coding Assistant")
     
     # Sidebar for navigation
     menu = st.sidebar.selectbox("Menu", ["Solve Problem"])
