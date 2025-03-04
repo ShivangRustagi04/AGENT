@@ -17,9 +17,32 @@ def generate_hint(problem_description):
 
 # Function to evaluate a solution using Gemini API
 def evaluate_solution(problem_description, solution_code):
-    prompt = f"Evaluate this solution for the problem: {problem_description}\nSolution:\n{solution_code}"
+    # Check if the solution is empty or too short to be considered complete
+    if not solution_code.strip() or len(solution_code.strip()) < 20:
+        return (
+            "Your solution seems incomplete, but don't worry! You're on the right track. "
+            "Take your time to think through the problem and try again. I believe in you!"
+        )
+
+    # Generate feedback for the solution without providing direct answers
+    prompt = (
+        f"Evaluate this solution for the problem: {problem_description}\n"
+        f"Solution:\n{solution_code}\n\n"
+        "Provide constructive feedback that encourages the candidate without giving away the solution. "
+        "If the solution is incomplete or incorrect, motivate the candidate to keep trying."
+    )
     response = model.generate_content(prompt)
     evaluation = response.text
+
+    # Add motivational messages based on the evaluation
+    if "correct" in evaluation.lower() or "well done" in evaluation.lower():
+        evaluation += "\n\nGreat job! You've cracked it! Keep up the excellent work!"
+    else:
+        evaluation += (
+            "\n\nYou're moving in the right direction! I believe in you and know that you can crack it. "
+            "Take a moment to review the feedback and refine your solution."
+        )
+
     return evaluation
 
 # Streamlit app
