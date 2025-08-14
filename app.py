@@ -6,7 +6,7 @@ import os
 # Load environment variables
 load_dotenv()
 genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
-model = genai.GenerativeModel('gemini-1.5-pro-latest')
+model = genai.GenerativeModel('gemini-2.0-pro')
 
 # Function to generate hints using Gemini API
 def generate_hint(problem_description):
